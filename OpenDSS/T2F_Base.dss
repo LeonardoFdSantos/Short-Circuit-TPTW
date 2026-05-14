@@ -1,0 +1,62 @@
+! ============================================================
+! Modelo OpenDSS - Sistema T2F (Trifasico a Dois Fios)
+! Validacao do modelo analitico de curto-circuito
+!
+! Sistema: 13.8 kV, 60 Hz, condutor 2 AWG, 60 km
+! Topologia: 2 condutores aereos (A, B) + solo como fase C
+! ============================================================
+
+Clear
+
+New Circuit.T2F_CC basekv=13.8 pu=1.0 phases=3 Mvasc3=120 Mvasc1=120
+
+! Frequencia
+Set DefaultBaseFrequency=60
+
+! ============================================================
+! TRANSFORMADOR ISOLADOR (Delta-Yg)
+! 300 kVA, 13.8/13.8 kV, Z = 0.48% + j1.85% (x2 enrolamentos)
+! ============================================================
+New Transformer.TR1 phases=3 windings=2
+~ buses=[sourcebus, BARRAT2F]
+~ conns=[delta, wye]
+~ kvs=[13.8, 13.8]
+~ kvas=[300, 300]
+~ %Rs=[0.48, 0.48]
+~ xhl=3.70
+
+! ============================================================
+! LINHA T2F - Impedancias via Carson
+! Condutor 2 AWG: R=1.102 ohm/km, GMR=0.00308 m
+! Espacamento: 1.60 m, Altura: 10.372 m
+! Resistividade do solo: 100 ohm.m
+! ============================================================
+
+! Linha T2F usando LineCode com impedancias explicitas
+! Zp = 1.1612 + j0.9446 ohm/km (propria)
+! Zm = 0.0592 + j0.4732 ohm/km (mutua)
+New LineCode.T2F_CODE nphases=2 units=km
+~ rmatrix=[1.1612 | 0.0592 1.1612]
+~ xmatrix=[0.9446 | 0.4732 0.9446]
+
+! Linha T2F de 60 km (caso base)
+New Line.LINHA_T2F bus1=BARRAT2F.1.2 bus2=FALTA.1.2 linecode=T2F_CODE length=60 units=km
+
+! ============================================================
+! ATERRAMENTO
+! Resistencia de aterramento do transformador isolador: 10 ohm
+! Resistencia de aterramento do consumidor: 10 ohm
+! ============================================================
+
+! Aterramento na barra do transformador
+New Reactor.RTI phases=1 bus1=BARRAT2F.3 bus2=BARRAT2F.0 R=10 X=0
+
+! Aterramento no ponto de falta
+New Reactor.RTC phases=1 bus1=FALTA.3 bus2=FALTA.0 R=10 X=0
+
+! ============================================================
+! Definir tensoes base e resolver
+! ============================================================
+Set voltagebases=[13.8]
+Calcvoltagebases
+Solve
