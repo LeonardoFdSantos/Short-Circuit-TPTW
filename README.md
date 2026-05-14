@@ -6,6 +6,7 @@ Analytical short-circuit model for rural three-phase two-wire (T2F/TPTW) distrib
 
 ```
 Short-Circuit-TPTW/
+├── run_all.m                     # Master script - runs everything
 ├── calcImpedanciasCarson.m       # Carson's equations (impedance calculation)
 ├── calcCurtoT2F.m                # Short-circuit currents (mesh/KVL method)
 ├── defineFaltaT2F.m              # Fault resistance definitions (ABC, AB, AC, BC)
@@ -54,14 +55,27 @@ Short-Circuit-TPTW/
 
 ## How to Run
 
-### MATLAB (analytical model + sensitivity)
+### Run Everything (recommended)
 ```matlab
 cd Short-Circuit-TPTW
-AnaliseSensibilidade          % Generates sensitivity figure
-IEEE13_T2F_Substituicao       % IEEE 13-bus comparison
+run_all
+```
+This single script executes all analyses in sequence:
+1. Parametric sensitivity analysis (pure MATLAB)
+2. IEEE 13-bus comparison: TPTW vs Three-phase vs SWER (pure MATLAB)
+3. Validation figures from pre-computed Simulink data (Python)
+4. OpenDSS validation (skipped automatically if OpenDSS is not installed)
+
+All output figures are saved to `img/` and CSV results to the root directory.
+
+### Individual Scripts
+```matlab
+cd Short-Circuit-TPTW
+AnaliseSensibilidade          % Sensitivity analysis only
+IEEE13_T2F_Substituicao       % IEEE 13-bus comparison only
 ```
 
-### MATLAB (OpenDSS validation, requires OpenDSS installed)
+### OpenDSS Validation (requires OpenDSS installed)
 ```matlab
 cd Short-Circuit-TPTW/OpenDSS
 ValidacaoOpenDSS
