@@ -207,43 +207,78 @@ T_rti = array2table([rti_vec', squeeze(results_rti(:,1,1)), squeeze(results_rti(
 writetable(T_rti, 'sensibilidade_aterramento.csv');
 
 %% ========== SENSITIVITY INDEX SUMMARY TABLE ==========
-fprintf('\n=== SENSITIVITY SUMMARY TABLE (ABC fault, phase A) ===\n');
+% Uses point elasticity at ±20% around base values (as in the paper)
+fprintf('\n=== SENSITIVITY SUMMARY TABLE (ABC fault, ±20%% variation) ===\n');
 fprintf('%-25s | %-15s | %-12s | %-12s | %-10s\n', ...
-    'Parameter', 'Range', 'I variation(%)', 'Elasticity', 'Class.');
+    'Parameter', 'Base value', 'I variation(%)', 'Elasticity', 'Class.');
 fprintf('%s\n', repmat('-', 1, 80));
 
-calc_elast = @(I_ini, I_fim, p_ini, p_fim) ((I_fim-I_ini)/I_ini) / ((p_fim-p_ini)/p_ini);
+% Point elasticity: S = (dI/I) / (dp/p) with dp/p = ±20%
+delta = 0.20;  % 20% variation
 
-dI_rho = (results_rho(end,1,1)-results_rho(1,1,1))/results_rho(1,1,1)*100;
-S_rho = calc_elast(results_rho(1,1,1), results_rho(end,1,1), rho_vec(1), rho_vec(end));
-fprintf('%-25s | %-15s | %+8.1f%%    | %+8.4f    | %-10s\n', ...
-    'Resistivity (rho)', '100-10000 ohm.m', dI_rho, S_rho, classif_sens(S_rho));
+% Resistivity: base=100
+[Zp_lo, Zm_lo, ~, ~] = calcImpedanciasCarson(f, RI, rmgi, dij_base, h, rho_base*(1-delta));
+[Zp_hi, Zm_hi, ~, ~] = calcImpedanciasCarson(f, RI, rmgi, dij_base, h, rho_base*(1+delta));
+[Raf, Rbf, Rcf] = defineFaltaT2F(1, Rf_base);
+[I_base_rho, ~, ~] = calcCurtoT2F(Zp, Zm, d_base, 1, rti_base, rtc, Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
+[I_lo_rho, ~, ~] = calcCurtoT2F(Zp_lo, Zm_lo, d_base, 1, rti_base, rtc, Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
+[I_hi_rho, ~, ~] = calcCurtoT2F(Zp_hi, Zm_hi, d_base, 1, rti_base, rtc, Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
+dI_rho = (I_hi_rho - I_lo_rho) / I_base_rho * 100;
+S_rho = ((I_hi_rho - I_lo_rho)/I_base_rho) / (2*delta);
+fprintf('%-25s | %-15s | %+8.2f%%    | %+8.4f    | %-10s\n', ...
+    'Resistivity (rho)', '100 ohm.m', dI_rho, S_rho, classif_sens(S_rho));
 
-dI_d = (results_d(end,1,1)-results_d(1,1,1))/results_d(1,1,1)*100;
-S_d = calc_elast(results_d(1,1,1), results_d(end,1,1), d_vec(1), d_vec(end));
-fprintf('%-25s | %-15s | %+8.1f%%    | %+8.4f    | %-10s\n', ...
-    'Length (d)', '20-240 km', dI_d, S_d, classif_sens(S_d));
+% Length: base=60 km
+d_lo = d_base*(1-delta); d_hi = d_base*(1+delta);
+[I_base_d, ~, ~] = calcCurtoT2F(Zp, Zm, d_base, 1, rti_base, rtc, Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
+[I_lo_d, ~, ~] = calcCurtoT2F(Zp, Zm, d_lo, 1, rti_base, rtc, Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
+[I_hi_d, ~, ~] = calcCurtoT2F(Zp, Zm, d_hi, 1, rti_base, rtc, Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
+dI_d = (I_hi_d - I_lo_d) / I_base_d * 100;
+S_d = ((I_hi_d - I_lo_d)/I_base_d) / (2*delta);
+fprintf('%-25s | %-15s | %+8.2f%%    | %+8.4f    | %-10s\n', ...
+    'Length (d)', '60 km', dI_d, S_d, classif_sens(S_d));
 
-dI_Rf = (results_Rf(end,1,1)-results_Rf(1,1,1))/results_Rf(1,1,1)*100;
-S_Rf = calc_elast(results_Rf(1,1,1), results_Rf(end,1,1), Rf_vec(1), Rf_vec(end));
-fprintf('%-25s | %-15s | %+8.1f%%    | %+8.4f    | %-10s\n', ...
-    'Fault resistance (Rf)', '0-100 ohm', dI_Rf, S_Rf, classif_sens(S_Rf));
+% Fault resistance: base=40 ohm
+Rf_lo = Rf_base*(1-delta); Rf_hi = Rf_base*(1+delta);
+[Raf_b, Rbf_b, Rcf_b] = defineFaltaT2F(1, Rf_base);
+[Raf_lo, Rbf_lo, Rcf_lo] = defineFaltaT2F(1, Rf_lo);
+[Raf_hi, Rbf_hi, Rcf_hi] = defineFaltaT2F(1, Rf_hi);
+[I_base_Rf, ~, ~] = calcCurtoT2F(Zp, Zm, d_base, 1, rti_base, rtc, Raf_b, Rbf_b, Rcf_b, Vbase, SCC, Ztri_pu, f);
+[I_lo_Rf, ~, ~] = calcCurtoT2F(Zp, Zm, d_base, 1, rti_base, rtc, Raf_lo, Rbf_lo, Rcf_lo, Vbase, SCC, Ztri_pu, f);
+[I_hi_Rf, ~, ~] = calcCurtoT2F(Zp, Zm, d_base, 1, rti_base, rtc, Raf_hi, Rbf_hi, Rcf_hi, Vbase, SCC, Ztri_pu, f);
+dI_Rf = (I_hi_Rf - I_lo_Rf) / I_base_Rf * 100;
+S_Rf = ((I_hi_Rf - I_lo_Rf)/I_base_Rf) / (2*delta);
+fprintf('%-25s | %-15s | %+8.2f%%    | %+8.4f    | %-10s\n', ...
+    'Fault resistance (Rf)', '40 ohm', dI_Rf, S_Rf, classif_sens(S_Rf));
 
-dI_dij = (results_dij(end,1,1)-results_dij(1,1,1))/results_dij(1,1,1)*100;
-S_dij = calc_elast(results_dij(1,1,1), results_dij(end,1,1), dij_vec(1), dij_vec(end));
-fprintf('%-25s | %-15s | %+8.1f%%    | %+8.4f    | %-10s\n', ...
-    'Spacing (dij)', '0.5-2.0 m', dI_dij, S_dij, classif_sens(S_dij));
+% Spacing: base=1.60 m
+dij_lo = dij_base*(1-delta); dij_hi = dij_base*(1+delta);
+[Zp_dlo, Zm_dlo, ~, ~] = calcImpedanciasCarson(f, RI, rmgi, dij_lo, h, rho_base);
+[Zp_dhi, Zm_dhi, ~, ~] = calcImpedanciasCarson(f, RI, rmgi, dij_hi, h, rho_base);
+[I_base_dij, ~, ~] = calcCurtoT2F(Zp, Zm, d_base, 1, rti_base, rtc, Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
+[I_lo_dij, ~, ~] = calcCurtoT2F(Zp_dlo, Zm_dlo, d_base, 1, rti_base, rtc, Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
+[I_hi_dij, ~, ~] = calcCurtoT2F(Zp_dhi, Zm_dhi, d_base, 1, rti_base, rtc, Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
+dI_dij = (I_hi_dij - I_lo_dij) / I_base_dij * 100;
+S_dij = ((I_hi_dij - I_lo_dij)/I_base_dij) / (2*delta);
+fprintf('%-25s | %-15s | %+8.2f%%    | %+8.4f    | %-10s\n', ...
+    'Spacing (dij)', '1.60 m', dI_dij, S_dij, classif_sens(S_dij));
 
-dI_rti = (results_rti(end,1,1)-results_rti(1,1,1))/results_rti(1,1,1)*100;
-S_rti = calc_elast(results_rti(1,1,1), results_rti(end,1,1), rti_vec(1), rti_vec(end));
-fprintf('%-25s | %-15s | %+8.1f%%    | %+8.4f    | %-10s\n', ...
-    'Grounding (rti)', '5-30 ohm', dI_rti, S_rti, classif_sens(S_rti));
+% Grounding: base=10 ohm
+rti_lo = rti_base*(1-delta); rti_hi = rti_base*(1+delta);
+[I_base_rti, ~, ~] = calcCurtoT2F(Zp, Zm, d_base, 1, rti_base, rtc, Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
+[I_lo_rti, ~, ~] = calcCurtoT2F(Zp, Zm, d_base, 1, rti_lo, rtc, Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
+[I_hi_rti, ~, ~] = calcCurtoT2F(Zp, Zm, d_base, 1, rti_hi, rtc, Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
+dI_rti = (I_hi_rti - I_lo_rti) / I_base_rti * 100;
+S_rti = ((I_hi_rti - I_lo_rti)/I_base_rti) / (2*delta);
+fprintf('%-25s | %-15s | %+8.2f%%    | %+8.4f    | %-10s\n', ...
+    'Grounding (rti)', '10 ohm', dI_rti, S_rti, classif_sens(S_rti));
 
 fprintf('\nCriterion: |S| > 0.5 = High, 0.1 < |S| < 0.5 = Medium, |S| < 0.1 = Low\n');
-fprintf('S = elasticity = (dI/I)/(dp/p)\n');
+fprintf('S = point elasticity = (dI/I) / (dp/p), evaluated at ±20%% around base\n');
 
 T_sens = table();
 T_sens.Parameter = {'Resistivity'; 'Length'; 'Fault_resistance'; 'Spacing'; 'Grounding'};
+T_sens.Base_value = [rho_base; d_base; Rf_base; dij_base; rti_base];
 T_sens.I_variation_pct = [dI_rho; dI_d; dI_Rf; dI_dij; dI_rti];
 T_sens.Elasticity = [S_rho; S_d; S_Rf; S_dij; S_rti];
 T_sens.Classification = {classif_sens(S_rho); classif_sens(S_d); classif_sens(S_Rf); classif_sens(S_dij); classif_sens(S_rti)};

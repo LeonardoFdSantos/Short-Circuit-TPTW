@@ -1,0 +1,72 @@
+! ============================================================
+! Modelo OpenDSS - Sistema T2F COM Impedancia de Equalizacao (Ze)
+! Validacao do modelo analitico de curto-circuito
+!
+! Sistema: 13.8 kV, 60 Hz, condutor 2 AWG, 60 km
+! Topologia: 2 condutores aereos (A, B) + solo como fase C
+!
+! ABORDAGEM: Linha de 3 fases com matriz 3x3
+!   Fases 1,2 = condutores aereos (Zp, Zm de Carson)
+!   Fase 3 = caminho de retorno pela terra (Ze_total/d por km)
+!   Ze_total = Rti + Rtc + real(Zp-2Zm)*d
+!   Modelado como: Rti e Rtc nos terminais + Ze distribuida na linha
+!
+! A fase 3 da linha representa o solo com impedancia
+! Ze_line = real(Zp-2Zm) ohm/km (parte distribuida)
+! Rti e Rtc sao concentrados nos terminais
+! ============================================================
+
+Clear
+
+New Circuit.T2F_CC basekv=13.8 pu=1.0 phases=3 Mvasc3=120 Mvasc1=120
+
+! Frequencia
+Set DefaultBaseFrequency=60
+
+! ============================================================
+! TRANSFORMADOR ISOLADOR (Delta-Yg)
+! 300 kVA, 13.8/13.8 kV, Z = 0.48% + j1.85% (x2 enrolamentos)
+! ============================================================
+New Transformer.TR1 phases=3 windings=2
+~ buses=[sourcebus, BARRAT2F]
+~ conns=[delta, wye]
+~ kvs=[13.8, 13.8]
+~ kvas=[300, 300]
+~ %Rs=[0.48, 0.48]
+~ xhl=3.70
+
+! ============================================================
+! LINHA T2F - 3 fases com matriz 3x3
+! Fases 1,2: condutores aereos
+!   Zp = 1.1612 + j0.9446 ohm/km
+!   Zm = 0.0592 + j0.4732 ohm/km
+! Fase 3: solo (caminho de retorno)
+!   Z33 = real(Zp - 2*Zm) = 1.0428 ohm/km (R only, X~0)
+!   Z13 = Z23 = 0 (sem acoplamento mutuo com terra distribuida)
+! ============================================================
+
+New LineCode.T2F_3PH nphases=3 units=km
+~ rmatrix=[1.1612 | 0.0592 1.1612 | 0.0 0.0 1.0428]
+~ xmatrix=[0.9446 | 0.4732 0.9446 | 0.0 0.0 0.0001]
+
+! Linha T2F de 60 km - 3 fases (1,2 = aereos, 3 = terra)
+New Line.LINHA_T2F bus1=BARRAT2F.1.2.3 bus2=FALTA.1.2.3 linecode=T2F_3PH length=60 units=km
+
+! ============================================================
+! ATERRAMENTO
+! Rti = 10 ohm no lado do transformador (fase 3 -> ground)
+! Rtc = 10 ohm no lado do consumidor (fase 3 -> ground)
+! ============================================================
+
+! Aterramento na barra do transformador
+New Reactor.RTI phases=1 bus1=BARRAT2F.3 bus2=BARRAT2F.0 R=10 X=0
+
+! Aterramento no ponto de falta
+New Reactor.RTC phases=1 bus1=FALTA.3 bus2=FALTA.0 R=10 X=0
+
+! ============================================================
+! Definir tensoes base e resolver
+! ============================================================
+Set voltagebases=[13.8]
+Calcvoltagebases
+Solve

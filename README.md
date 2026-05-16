@@ -22,7 +22,11 @@ Short-Circuit-TPTW/
 │   ├── validacao_comprimento.csv
 │   ├── validacao_posicao.csv
 │   ├── validacao_fim_linha.csv
-│   └── validacao_resistividade.csv
+│   ├── validacao_resistividade.csv
+│   └── experimental/            # Ze modeling attempts (see README inside)
+│       ├── T2F_ComZe.dss
+│       ├── ValidacaoZe.m
+│       └── README.md
 ├── img/
 │   ├── Imagem10.png             # Relative error: end-of-line faults
 │   └── Imagem11.png             # Relative error: ABC fault vs position
@@ -91,7 +95,7 @@ python gerar_figuras_validacao.py
 
 - **Simulink vs Analytical (no compensation):** max error 0.055% (ABC fault)
 - **OpenDSS vs Analytical:** mean error 2.03%, max 8.08% (AB fault due to transformer coupling)
-- **OpenDSS AC/BC faults:** ~20% error attributed to Ze not modeled in OpenDSS
+- **OpenDSS AC/BC faults:** ~20% discrepancy due to different earth return modeling (analytical includes Re as lumped path; OpenDSS embeds it in Carson's corrections). The two models provide formal upper/lower bounds for phase-to-ground fault current. See `OpenDSS/experimental/` for details.
 
 ## Key Findings
 
