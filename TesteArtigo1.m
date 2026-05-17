@@ -63,7 +63,7 @@ Cct=C(1,1)+C(2,1);   % Conductor-to-ground capacitance (F/km)
 Ccc=-C(2,1);          % Conductor-to-conductor capacitance (F/km)
 Ceq=Cct-Ccc;          % Equalization capacitance (F/km)
 
-% Equalization impedance
+% Equalization impedance (informational only, not used in fault calc)
 Ze = Zp-2*Zm;         % ohm/km
 
 % Series impedance
@@ -78,26 +78,16 @@ for compensada=[0 1 2]
     cct=Cct*d;
     rp=real(Zp)*d;
     rm=real(Zm)*d;
-    re=(real(Ze)*d)-rti-rtc;
-        if re<0
-            NRE=1e-12;
-        else
-            NRE=re;
-        end
     lp=(imag(Zp)/(2*pi*f))*d;
     lm=(imag(Zm)/(2*pi*f))*d;
-    le=1e-10;
 
         if compensada==0
-        cequa=0; 
-        NRE=1e-10;
-        le=1e-10;
+        cequa=0;
         % No compensation
         elseif compensada==1
-        NRE=1e-12;
         % C compensation
         elseif compensada==2
-        % RC compensation
+        % RC compensation (capacitive only, Re removed)
         end
     end
 end

@@ -32,21 +32,32 @@ rm_val = real(Zm) * d * m1;
 lp = (imag(Zp)/(2*pi*f)) * d * m1;
 lm_val = (imag(Zm)/(2*pi*f)) * d * m1;
 
-% Equalization impedance (Ze = Zp - 2*Zm)
-Ze_comp = Zp - 2*Zm;
-re = real(Ze_comp) * d * m1 - rti - rtc;
-if re < 0
-    NRE = 1e-12;
-else
-    NRE = re;
-end
-le = 1e-10;  % equalization inductance neglected
-
 % Total mesh impedances
 Za = Ze_source + Ztri + rp + 1i*2*pi*f*lp + Raf;
 Zb = Ze_source + Ztri + rp + 1i*2*pi*f*lp + Rbf;
-Zc = Ze_source + Ztri + rti + NRE + 1i*2*pi*f*le + Rcf;
 ZmCC = rm_val + 1i*2*pi*f*lm_val;
+
+% Phase C impedance depends on fault type:
+% - For single-phase-to-ground faults (AC, BC): one aerial phase is open,
+%   current returns through the full line path. Zc includes Zp*d.
+% - For three-phase (ABC) or phase-to-phase (AB): concentrated earth path
+%   with equalization impedance Re = real(Zp-2Zm)*d - Rti - Rtc.
+is_single_phase_ground = (Raf > 1e4 || Rbf > 1e4) && (Rcf < 1e4);
+
+if is_single_phase_ground
+    % AC or BC fault: earth return via full line impedance
+    Zc = Ze_source + Ztri + rp + 1i*2*pi*f*lp + rti + Rcf;
+else
+    % ABC or AB fault: concentrated earth path
+    Ze_comp = Zp - 2*Zm;
+    re = real(Ze_comp) * d * m1 - rti - rtc;
+    if re < 0
+        NRE = 1e-12;
+    else
+        NRE = re;
+    end
+    Zc = Ze_source + Ztri + rti + NRE + Rcf;
+end
 
 % Phase voltages (star)
 Va = Vbase/sqrt(3) * exp(0);

@@ -8,7 +8,16 @@ Ztri=2*(0.0048119 +i*0.018511)*Zbase;
 %% TPTW Line Impedances
 Za=Ze+Ztri+rp+i*2*pi*60*lp+Raf;
 Zb=Ze+Ztri+rp+i*2*pi*60*lp+Rbf;
-Zc=Ze+Ztri+rti+NRE+i*2*pi*60*le+Rcf; %% for faults before consumer transformer
+
+% Conditional Zc: AC/BC uses Zp*d, ABC/AB uses NRE
+is_single_phase_ground = (Raf > 1e4 || Rbf > 1e4) && (Rcf < 1e4);
+if is_single_phase_ground
+    Zc=Ze+Ztri+rp+i*2*pi*60*lp+rti+Rcf;
+else
+    NRE_val = real(Zp-2*Zm)*d - rti - rtc;
+    if NRE_val < 0, NRE_val = 1e-12; end
+    Zc=Ze+Ztri+rti+NRE_val+Rcf;
+end
 Zm=rm+i*2*pi*60*lm;
 
 %% Phase Voltages
