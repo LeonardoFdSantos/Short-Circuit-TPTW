@@ -2,10 +2,16 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+import os
+
 matplotlib.rcParams['font.family'] = 'serif'
 matplotlib.rcParams['font.size'] = 9
 matplotlib.rcParams['axes.labelsize'] = 10
 matplotlib.rcParams['legend.fontsize'] = 8
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+os.makedirs('img', exist_ok=True)
 
 # --- Figure 10: Relative error end-of-line fault (no compensation) ---
 df_fim = pd.read_csv('valores_resultados_fim_linha_sem_compensacao.csv')

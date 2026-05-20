@@ -145,6 +145,8 @@ end
 %% ========== PLOTS ==========
 fprintf('\n=== Generating Figures ===\n');
 
+if ~exist('img', 'dir'), mkdir('img'); end
+
 set(0, 'DefaultAxesFontName', 'Times New Roman');
 set(0, 'DefaultAxesFontSize', 10);
 
@@ -244,18 +246,25 @@ saveas(gcf, 'img/Imagem24.png');
 fprintf('Saved: Imagem24.png (Protection reach)\n');
 
 %% ========== EXPORT CSV ==========
-T = table();
+n_rows = length(distancias_teste) * 4;
+Distance_km = zeros(n_rows, 1);
+Fault_Type = cell(n_rows, 1);
+Imax_TPTW = zeros(n_rows, 1);
+Imax_ThreePhase = zeros(n_rows, 1);
+Imax_SWER = zeros(n_rows, 1);
+
 idx = 1;
 for id = 1:length(distancias_teste)
     for tipo = 1:4
-        T.Distance_km(idx) = distancias_teste(id);
-        T.Fault_Type(idx) = fault_names(tipo);
-        T.Imax_TPTW(idx) = max(squeeze(resultados_T2F(id, tipo, :)));
-        T.Imax_ThreePhase(idx) = max(squeeze(resultados_TRIF(id, tipo, :)));
-        T.Imax_SWER(idx) = max(squeeze(resultados_MONO(id, tipo, :)));
+        Distance_km(idx) = distancias_teste(id);
+        Fault_Type{idx} = fault_names{tipo};
+        Imax_TPTW(idx) = max(squeeze(resultados_T2F(id, tipo, :)));
+        Imax_ThreePhase(idx) = max(squeeze(resultados_TRIF(id, tipo, :)));
+        Imax_SWER(idx) = max(squeeze(resultados_MONO(id, tipo, :)));
         idx = idx + 1;
     end
 end
+T = table(Distance_km, Fault_Type, Imax_TPTW, Imax_ThreePhase, Imax_SWER);
 writetable(T, 'IEEE13_substituicao_resultados.csv');
 
 fprintf('\n=== Complete! ===\n');

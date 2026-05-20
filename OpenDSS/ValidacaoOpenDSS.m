@@ -25,6 +25,7 @@ Vbase = 13800;
 SCC = 120;
 Ztri_pu = 0.0048119 + 1i*0.018511;
 Rf_base = 40;
+Rf_ab = 20;  % ohm per phase for AB fault
 
 %% Compute TPTW impedances
 [Zp, Zm, Ze, Zl] = calcImpedanciasCarson(f, RI, rmgi, dij, h, rho);
@@ -53,17 +54,21 @@ results_analytical = zeros(4, 3);
 results_opendss = zeros(4, 3);
 
 for type = 1:4
-    [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_base);
-    
+    if type == 4
+        [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_ab);
+    else
+        [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_base);
+    end
+
     % Analytical calculation
     [IA_a, IB_a, IC_a] = calcCurtoT2F(Zp, Zm, d_base, 1, rti, rtc, ...
                                         Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
     results_analytical(type, :) = [IA_a, IB_a, IC_a];
-    
+
     % OpenDSS
     DSSText.Command = ['Compile "' fullfile(dssPath, 'T2F_Base.dss') '"'];
     DSSText.Command = sprintf('Edit Line.LINHA_T2F length=%g', d_base);
-    
+
     % Apply fault by type
     if type == 1  % ABC (three-phase)
         DSSText.Command = 'New Fault.F1 bus1=FALTA phases=3 r=0.0001';
@@ -72,9 +77,9 @@ for type = 1:4
     elseif type == 3  % BC (phase B - ground)
         DSSText.Command = sprintf('New Fault.F1 bus1=FALTA.2 phases=1 r=%g', Rf_base);
     elseif type == 4  % AB (phase-to-phase)
-        DSSText.Command = sprintf('New Fault.F1 bus1=FALTA.1 bus2=FALTA.2 phases=1 r=%g', Rf_base/2);
+        DSSText.Command = sprintf('New Fault.F1 bus1=FALTA.1 bus2=FALTA.2 phases=1 r=%g', 2*Rf_ab);
     end
-    
+
     DSSText.Command = 'Solve';
 
     % Read line currents (2 phases, 2 terminals)

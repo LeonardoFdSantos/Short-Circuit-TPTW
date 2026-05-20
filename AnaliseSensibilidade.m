@@ -32,6 +32,7 @@ rti_vec = [5, 10, 15, 20, 30];                  % ohm
 
 %% Fault type definitions
 fault_names = {'ABC', 'AC', 'BC', 'AB'};
+Rf_ab = 20;  % ohm per phase for AB fault
 
 %% ========== SENSITIVITY 1: Soil Resistivity ==========
 fprintf('=== Sensitivity: Soil Resistivity ===\n');
@@ -41,7 +42,11 @@ for ir = 1:length(rho_vec)
     rho = rho_vec(ir);
     [Zp, Zm, ~, ~] = calcImpedanciasCarson(f, RI, rmgi, dij_base, h, rho);
     for type = 1:4
-        [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_base);
+        if type == 4
+            [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_ab);
+        else
+            [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_base);
+        end
         [IA, IB, IC] = calcCurtoT2F(Zp, Zm, d_base, 1, rti_base, rtc, ...
                                       Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
         results_rho(ir, type, :) = [IA, IB, IC];
@@ -56,7 +61,11 @@ results_d = zeros(length(d_vec), 4, 3);
 for id = 1:length(d_vec)
     d = d_vec(id);
     for type = 1:4
-        [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_base);
+        if type == 4
+            [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_ab);
+        else
+            [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_base);
+        end
         [IA, IB, IC] = calcCurtoT2F(Zp, Zm, d, 1, rti_base, rtc, ...
                                       Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
         results_d(id, type, :) = [IA, IB, IC];
@@ -70,7 +79,11 @@ results_Rf = zeros(length(Rf_vec), 4, 3);
 for irf = 1:length(Rf_vec)
     Rf = Rf_vec(irf);
     for type = 1:4
-        [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf);
+        if type == 4
+            [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf);
+        else
+            [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf);
+        end
         [IA, IB, IC] = calcCurtoT2F(Zp, Zm, d_base, 1, rti_base, rtc, ...
                                       Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
         results_Rf(irf, type, :) = [IA, IB, IC];
@@ -85,7 +98,11 @@ for idij = 1:length(dij_vec)
     dij = dij_vec(idij);
     [Zp_v, Zm_v, ~, ~] = calcImpedanciasCarson(f, RI, rmgi, dij, h, rho_base);
     for type = 1:4
-        [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_base);
+        if type == 4
+            [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_ab);
+        else
+            [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_base);
+        end
         [IA, IB, IC] = calcCurtoT2F(Zp_v, Zm_v, d_base, 1, rti_base, rtc, ...
                                       Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
         results_dij(idij, type, :) = [IA, IB, IC];
@@ -99,7 +116,11 @@ results_rti = zeros(length(rti_vec), 4, 3);
 for irti = 1:length(rti_vec)
     rti = rti_vec(irti);
     for type = 1:4
-        [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_base);
+        if type == 4
+            [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_ab);
+        else
+            [Raf, Rbf, Rcf] = defineFaltaT2F(type, Rf_base);
+        end
         [IA, IB, IC] = calcCurtoT2F(Zp, Zm, d_base, 1, rti, rtc, ...
                                       Raf, Rbf, Rcf, Vbase, SCC, Ztri_pu, f);
         results_rti(irti, type, :) = [IA, IB, IC];
@@ -108,6 +129,8 @@ end
 
 %% ========== PLOTS ==========
 fprintf('=== Generating Plots ===\n');
+
+if ~exist('img', 'dir'), mkdir('img'); end
 
 set(0, 'DefaultAxesFontName', 'Times New Roman');
 set(0, 'DefaultAxesFontSize', 10);
